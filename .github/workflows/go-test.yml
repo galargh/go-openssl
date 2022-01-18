@@ -34,22 +34,25 @@ jobs:
         # If we prepend its location to the PATH
         #   subsequent 'shell: bash' steps will use msys2 instead of gitbash
         run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
-      - name: Run repo-specific setup
-        run: |
-          echo 'CC_FOR_windows_386=i686-w64-mingw32-gcc' >> $GITHUB_ENV
-          echo 'CGO_ENABLED=1' >> $GITHUB_ENV
-        shell: bash
       - name: Run tests
         uses: protocol/multiple-go-modules@v1.2
         with:
           # Use -coverpkg=./..., so that we include cross-package coverage.
           # If package ./A imports ./B, and ./A's tests also cover ./B,
           # this means ./B's coverage will be significantly higher than 0%.
-          run: PATH="/c/msys64/mingw64/bin:$PATH" go test -v -coverprofile=module-coverage.txt -coverpkg=./... ./...
+          run: |
+            if [ '${{ runner.os }}' == 'Windows' ]; then
+              export PATH="/c/msys64/mingw64/bin:$PATH"
+            fi
+            go test -v -coverprofile=module-coverage.txt -coverpkg=./... ./...
       - name: Run tests (32 bit)
         if: ${{ matrix.os != 'macos' }} # can't run 32 bit tests on OSX.
         uses: protocol/multiple-go-modules@v1.2
         env:
           GOARCH: 386
         with:
-          run: PATH="/c/msys64/mingw32/bin:$PATH" go test -v ./...
+          run: |
+            if [ '${{ runner.os }}' == 'Windows' ]; then
+              export PATH="/c/msys64/mingw32/bin:$PATH"
+            fi
+            go test -v ./...
