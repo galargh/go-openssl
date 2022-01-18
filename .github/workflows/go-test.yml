@@ -34,6 +34,9 @@ jobs:
         # If we prepend its location to the PATH
         #   subsequent 'shell: bash' steps will use msys2 instead of gitbash
         run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
+      - run: |
+          echo "CGO_ENABLED=1" >> $GITHUB_ENV
+        shell: bash
       - name: Run tests
         uses: protocol/multiple-go-modules@v1.2
         with:
