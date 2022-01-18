@@ -9,12 +9,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ "ubuntu", "windows", "macos" ]
-        go: [ "1.16.x", "1.17.x" ]
+        os: [ "windows" ]
+        go: [ "1.16.x" ]
     env:
       COVERAGES: ""
     runs-on: ${{ matrix.os }}-latest
-    name: ${{ matrix.os}} (go ${{ matrix.go }})
+    name: ${{ matrix.os }} (go ${{ matrix.go }})
     steps:
       - uses: actions/checkout@v2
         with:
@@ -35,10 +35,14 @@ jobs:
         #   subsequent 'shell: bash' steps will use msys2 instead of gitbash
         run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
       - name: Run repo-specific setup
-        uses: ./.github/actions/go-test-setup
-        if: hashFiles('./.github/actions/go-test-setup') != ''
+        run: |
+          echo 'CC_FOR_windows_386=C:/msys64/mingw32/bin/i686-w64-mingw32-gcc' >> $GITHUB_ENV
+          echo 'CGO_ENABLED=1' >> $GITHUB_ENV
+        shell: bash
       - name: Run tests
         uses: protocol/multiple-go-modules@v1.2
+        env:
+          PKG_CONFIG: C:/msys64/mingw64/bin/pkgconf
         with:
           # Use -coverpkg=./..., so that we include cross-package coverage.
           # If package ./A imports ./B, and ./A's tests also cover ./B,
@@ -49,18 +53,6 @@ jobs:
         uses: protocol/multiple-go-modules@v1.2
         env:
           GOARCH: 386
+          PKG_CONFIG: C:/msys64/mingw32/bin/pkgconf
         with:
           run: go test -v ./...
-      - name: Run tests with race detector
-        if: ${{ matrix.os == 'ubuntu' }} # speed things up. Windows and OSX VMs are slow
-        uses: protocol/multiple-go-modules@v1.2
-        with:
-          run: go test -v -race ./...
-      - name: Collect coverage files
-        shell: bash
-        run: echo "COVERAGES=$(find . -type f -name 'module-coverage.txt' | tr -s '\n' ',' | sed 's/,$//')" >> $GITHUB_ENV
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@f32b3a3741e1053eb607407145bc9619351dc93b # v2.1.0
-        with:
-          files: '${{ env.COVERAGES }}'
-          env_vars: OS=${{ matrix.os }}, GO=${{ matrix.go }}
