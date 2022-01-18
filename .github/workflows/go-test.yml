@@ -36,23 +36,20 @@ jobs:
         run: echo "C:/msys64/usr/bin" >> $GITHUB_PATH
       - name: Run repo-specific setup
         run: |
-          echo 'CC_FOR_windows_386=C:/msys64/mingw32/bin/i686-w64-mingw32-gcc' >> $GITHUB_ENV
+          echo 'CC_FOR_windows_386=i686-w64-mingw32-gcc' >> $GITHUB_ENV
           echo 'CGO_ENABLED=1' >> $GITHUB_ENV
         shell: bash
       - name: Run tests
         uses: protocol/multiple-go-modules@v1.2
-        env:
-          PKG_CONFIG: C:/msys64/mingw64/bin/pkgconf
         with:
           # Use -coverpkg=./..., so that we include cross-package coverage.
           # If package ./A imports ./B, and ./A's tests also cover ./B,
           # this means ./B's coverage will be significantly higher than 0%.
-          run: go test -v -coverprofile=module-coverage.txt -coverpkg=./... ./...
+          run: PATH="/c/msys64/mingw64/bin:$PATH" go test -v -coverprofile=module-coverage.txt -coverpkg=./... ./...
       - name: Run tests (32 bit)
         if: ${{ matrix.os != 'macos' }} # can't run 32 bit tests on OSX.
         uses: protocol/multiple-go-modules@v1.2
         env:
           GOARCH: 386
-          PKG_CONFIG: C:/msys64/mingw32/bin/pkgconf
         with:
-          run: go test -v ./...
+          run: PATH="/c/msys64/mingw32/bin:$PATH" go test -v ./...
